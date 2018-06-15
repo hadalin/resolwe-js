@@ -101,6 +101,22 @@ describeComponent('stateful component', [
     class SharedStateContainer extends StatefulComponentBase {
     }
 
+    @component({
+        module: tester.module,
+        directive: 'gen-dummy-not-saveable-stateful-component',
+        template: `<div>{{ctrl.foo}}</div>`,
+    })
+    class DummyNotSaveableStatefulComponent extends StatefulComponentBase {
+        @state() public foo: {};
+
+        public onComponentInit() {
+            super.onComponentInit();
+
+            this.foo = { func: () => {} }; // tslint:disable-line:no-empty
+        }
+    }
+
+
     // Ensure we have a state manager for each test.
     let stateManager: StateManager;
     beforeEach(inject((_stateManager_) => {
@@ -187,6 +203,14 @@ describeComponent('stateful component', [
         expect((<DummyStatefulComponent> component.ctrl.childComponents()[1]).bar).toBe(21);
         expect((<DummyStatefulComponent> component.ctrl.childComponents()[2]).foo).toBe('hello world');
         expect((<DummyStatefulComponent> component.ctrl.childComponents()[2]).bar).toBe(42);
+    });
+
+    it('throws error if the state is not serializable', () => {
+        const component = tester.createComponent<DummyNotSaveableStatefulComponent>(
+            DummyStatefulComponent.asView().template
+        );
+
+        expect(component.ctrl.saveState).toThrow();
     });
 
     it('handles shared state', () => {

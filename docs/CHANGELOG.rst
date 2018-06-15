@@ -9,6 +9,9 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 Unreleased
 ==========
 
+Changed
+-------
+- An error is thrown if state is not serializable when stateful component is saving state
 
 ==================
 4.0.1 - 2018-05-23

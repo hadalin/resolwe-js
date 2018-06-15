@@ -1,10 +1,12 @@
 import * as _ from 'lodash';
 import * as angular from 'angular';
 
-import {ComponentBase, component, ComponentConfiguration, Subscription} from './base';
-import {SharedStore, SharedStoreManager} from '../shared_store/index';
-import {StateManager} from './manager';
+import {isJSONSerializable} from '../utils/serialization';
 import {GenError} from '../errors/error';
+import {SharedStore, SharedStoreManager} from '../shared_store/index';
+
+import {ComponentBase, component, ComponentConfiguration, Subscription} from './base';
+import {StateManager} from './manager';
 
 export class StateItemMetadata {
     constructor(public propertyName: string, public shared: boolean) {
@@ -331,6 +333,10 @@ export abstract class StatefulComponentBase extends ComponentBase {
         _.forOwn(this.__stateMetadata, (metadata, key) => {
             let value = this[metadata.propertyName];
 
+            if (!metadata.shared && !isJSONSerializable(value)) {
+                throw new SaveStateError("Could not save state because the value is not serializable", value);
+            }
+
             if (metadata.shared) {
                 // In case of shared state, save the identifier of the shared store.
                 value = (<SharedStore<any, any>> value).storeId;
@@ -444,4 +450,21 @@ export function state(name?: string, shared: boolean = false) {
  */
 export function sharedState(name?: string) {
     return state(name, true);
+}
+
+/**
+ * Save state error.
+ */
+export class SaveStateError extends GenError {
+    public name = 'SaveStateError';
+
+    constructor(message: string, private _value: any) {
+        super(message);
+        // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
+        Object['setPrototypeOf'](this, SaveStateError.prototype);
+    }
+
+    public get value(): any {
+        return this._value;
+    }
 }
